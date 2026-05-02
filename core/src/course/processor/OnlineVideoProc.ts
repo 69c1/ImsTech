@@ -2,14 +2,24 @@ import { expect } from '@playwright/test';
 import { Page } from 'playwright';
 import ProgressBar from 'progress';
 import { CourseType, Processor } from '../processor.js';
-import { waitForSPALoaded } from '../../utils.js';
+import { waitForStable } from '../../utils.js';
 import Config from '../../config.js';
 
 export default class OnlineVideoProc implements Processor {
   name: CourseType = 'online_video';
 
   async exec(page: Page) {
-    await waitForSPALoaded(page);
+    await waitForStable(page);
+
+    const rightScreen = page.locator('div.full-screen-mode-content');
+    await rightScreen.evaluate((element) => {
+      element.scrollTo({
+        left: 0,
+        top: element.scrollHeight,
+        behavior: 'smooth',
+      });
+      return element.scrollHeight;
+    });
 
     const mediaType = await this.detectMediaType(page);
     if (!mediaType) {
@@ -123,25 +133,54 @@ export default class OnlineVideoProc implements Processor {
   }
 
   private monitorPlayback(page: Page) {
-    let lastCur = '';
+    let lastCur = 0;
+    let lastRestart = 0;
+    let running = false;
+
     const interval = setInterval(async () => {
+      if (running) return; // 防重入
+      running = true;
+
       try {
-        const cur = await page.evaluate(() => {
+        const state = await page.evaluate(() => {
           const el =
             document.querySelector('video') || document.querySelector('audio');
-          return el ? (el as HTMLMediaElement).currentTime : 0;
+
+          if (!el) return null;
+
+          const media = el as HTMLMediaElement;
+          return {
+            currentTime: media.currentTime,
+            paused: media.paused,
+            ended: media.ended,
+          };
         });
 
-        const curStr = String(cur);
-        if (curStr === lastCur) {
-          console.log('⚠️ 检测到播放可能卡住，尝试重启播放');
-          await this.restartPlayback(page);
+        if (!state) return;
+
+        const { currentTime, ended } = state;
+
+        // 忽略结束状态
+        if (ended) {
+          lastCur = currentTime;
+          return;
         }
-        lastCur = curStr;
+
+        // 插值判断
+        if (Math.abs(currentTime - lastCur) < 0.5) {
+          if (Date.now() - lastRestart > 5000) {
+            console.log('⚠️ 检测到播放可能卡住，尝试重启播放');
+            lastRestart = Date.now();
+            await this.restartPlayback(page);
+          }
+        }
+        lastCur = currentTime;
       } catch {
         /* ignore */
+      } finally {
+        running = false;
       }
-    }, 2000);
+    }, 5000);
 
     return () => clearInterval(interval);
   }
@@ -150,7 +189,6 @@ export default class OnlineVideoProc implements Processor {
     try {
       await this.clickSafely(page, '.mvp-toggle-play.mvp-first-btn-margin');
       await page.waitForTimeout(500);
-      await this.clickSafely(page, '.mvp-toggle-play.mvp-first-btn-margin');
     } catch (e) {
       console.warn('⚠️ 重启播放失败，尝试刷新');
       try {

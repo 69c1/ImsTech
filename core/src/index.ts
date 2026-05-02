@@ -9,7 +9,7 @@ import * as Activity from './activity.js';
 import * as Processor from './course/processor.js';
 import * as Search from './course/search.js';
 import { filterCookies, login, LoginConfig, storeCookies } from './login.js';
-import { errorWithRetry, input, waitForSPALoaded } from './utils.js';
+import { errorWithRetry, input, waitForStable } from './utils.js';
 import { CourseInfo } from './course/search.js';
 import { ActivityInfo } from './activity.js';
 
@@ -184,7 +184,7 @@ class IMSRunner {
         console.log(`执行出错: ${e}`);
       })
       .run(async () => {
-        await waitForSPALoaded(page);
+        await waitForStable(page);
         await processor.exec(page);
       });
 

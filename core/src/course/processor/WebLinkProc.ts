@@ -2,13 +2,13 @@ import { Page } from 'playwright';
 
 import { CourseType, Processor } from '../processor.js';
 
-import { waitForSPALoaded } from '../../utils.js';
+import { waitForStable } from '../../utils.js';
 
 export default class WebLinkProc implements Processor {
   name: CourseType = 'web_link';
 
   async exec(page: Page) {
-    await waitForSPALoaded(page);
+    await waitForStable(page);
     try {
       await page.getByText('观看回放').click({ timeout: 3000 });
     } catch {

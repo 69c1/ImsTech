@@ -1,6 +1,6 @@
 import { Page } from 'playwright';
 import { CourseType, Processor } from '../processor.js';
-import { waitForSPALoaded } from '../../utils.js';
+import { waitForStable } from '../../utils.js';
 
 export default class PageProc implements Processor {
   name: CourseType = 'page';
@@ -19,7 +19,7 @@ export default class PageProc implements Processor {
 
     console.log(`scroll to ${scrollH}`);
 
-    await waitForSPALoaded(page);
+    await waitForStable(page);
 
     const iframeHtml = page
       .frameLocator('#previewContentInIframe')

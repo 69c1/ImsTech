@@ -119,10 +119,6 @@ class HumanBehaviorPlugin extends PuppeteerExtraPlugin {
     const currentX = currentPos.x;
     const currentY = currentPos.y;
 
-    console.log(
-      `🖱️ 鼠标从 (${currentX.toFixed(1)}, ${currentY.toFixed(1)}) 移动至 (${targetX.toFixed(1)}, ${targetY.toFixed(1)})，步数: ${moveSteps}`,
-    );
-
     // 执行鼠标移动
     await page.mouse.move(targetX, targetY, { steps: moveSteps });
 
@@ -161,14 +157,12 @@ class HumanBehaviorPlugin extends PuppeteerExtraPlugin {
     const hoverDelay = 60 + Math.random() * 180;
     await page.waitForTimeout(hoverDelay);
 
-    console.log('👇 鼠标左键按下');
     await page.mouse.down({ button: 'left' });
 
     // 按压时间模拟（人类点击会保持按压一段时间）
     const pressDuration = 90 + Math.random() * 140;
     await page.waitForTimeout(pressDuration);
 
-    console.log(`👆 鼠标左键释放 (按压时长: ${pressDuration.toFixed(0)}ms)`);
     await page.mouse.up({ button: 'left' });
 
     // 点击后的短暂停留
@@ -193,14 +187,12 @@ class HumanBehaviorPlugin extends PuppeteerExtraPlugin {
     const hoverDelay = 100 + Math.random() * 200;
     await page.waitForTimeout(hoverDelay);
 
-    console.log('👇 鼠标右键按下');
     await page.mouse.down({ button: 'right' });
 
     // 右键按压时间通常更长
     const pressDuration = 120 + Math.random() * 180;
     await page.waitForTimeout(pressDuration);
 
-    console.log(`👆 鼠标右键释放 (按压时长: ${pressDuration.toFixed(0)}ms)`);
     await page.mouse.up({ button: 'right' });
 
     // 右键点击后停留时间更长
@@ -224,8 +216,6 @@ class HumanBehaviorPlugin extends PuppeteerExtraPlugin {
     const hoverDelay = 50 + Math.random() * 100;
     await page.waitForTimeout(hoverDelay);
 
-    console.log('🖱️ 开始双击操作');
-
     // 第一次点击
     await page.mouse.down({ button: 'left' });
     await page.waitForTimeout(30 + Math.random() * 50);
@@ -238,8 +228,6 @@ class HumanBehaviorPlugin extends PuppeteerExtraPlugin {
     await page.mouse.down({ button: 'left' });
     await page.waitForTimeout(20 + Math.random() * 40);
     await page.mouse.up({ button: 'left' });
-
-    console.log('✅ 双击操作完成');
   }
 
   /**
@@ -254,10 +242,6 @@ class HumanBehaviorPlugin extends PuppeteerExtraPlugin {
     const startPos = this.calculateInteractionPosition(startBox, opts.jitter);
     const endPos = this.calculateInteractionPosition(endBox, opts.jitter);
 
-    console.log(
-      `🎯 开始拖拽: (${startPos.x.toFixed(1)}, ${startPos.y.toFixed(1)}) → (${endPos.x.toFixed(1)}, ${endPos.y.toFixed(1)})`,
-    );
-
     // 移动到起始位置
     await this.simulateHumanMouseMove(page, startPos.x, startPos.y, opts);
 
@@ -265,7 +249,7 @@ class HumanBehaviorPlugin extends PuppeteerExtraPlugin {
     await page.waitForTimeout(hoverDelay);
 
     // 按下鼠标开始拖拽
-    console.log('👇 开始拖拽 - 鼠标按下');
+
     await page.mouse.down({ button: 'left' });
 
     // 拖拽过程中的移动（模拟人类的不稳定移动）
@@ -277,7 +261,7 @@ class HumanBehaviorPlugin extends PuppeteerExtraPlugin {
     await page.waitForTimeout(dragPause);
 
     // 释放鼠标完成拖拽
-    console.log('👆 结束拖拽 - 鼠标释放');
+
     await page.mouse.up({ button: 'left' });
 
     const postDragDelay = 60 + Math.random() * 90;
@@ -299,7 +283,7 @@ class HumanBehaviorPlugin extends PuppeteerExtraPlugin {
 
     // 悬停时间模拟人类观察
     const hoverDuration = 500 + Math.random() * 1500;
-    console.log(`⏳ 悬停观察: ${hoverDuration.toFixed(0)}ms`);
+
     await page.waitForTimeout(hoverDuration);
   }
 
@@ -333,20 +317,15 @@ class HumanBehaviorPlugin extends PuppeteerExtraPlugin {
 
     page.click = async (selector: string, options: any = {}): Promise<void> => {
       const delay = this.generateHumanDelay(opts.delayMin, opts.delayMax);
-      console.log(`⏰ [页面点击] 点击前延迟: ${delay.toFixed(0)}ms`);
+
       await page.waitForTimeout(delay);
 
       const locator = page.locator(selector);
       const box = await locator.boundingBox();
 
       if (box) {
-        console.log(
-          `🎯 [页面点击] 目标区域: (${box.x.toFixed(1)}, ${box.y.toFixed(1)}) ${box.width.toFixed(1)}x${box.height.toFixed(1)}`,
-        );
-
         // 小概率使用右键点击
         if (Math.random() < opts.rightClickProbability) {
-          console.log('🖱️ 使用右键点击');
           await this.performHumanRightClick(page, box, opts);
         } else {
           await this.performHumanLeftClick(page, box, opts);
@@ -354,7 +333,6 @@ class HumanBehaviorPlugin extends PuppeteerExtraPlugin {
         return;
       }
 
-      console.log('⚠️ [页面点击] 未找到目标区域，使用原始点击方法');
       return originalPageClick(selector, options);
     };
 
@@ -365,7 +343,6 @@ class HumanBehaviorPlugin extends PuppeteerExtraPlugin {
       opts,
       async (locator, box, originalMethod, options) => {
         if (Math.random() < opts.rightClickProbability) {
-          console.log('🖱️ [定位器点击] 使用右键点击');
           await this.performHumanRightClick(page, box, opts);
         } else {
           await this.performHumanLeftClick(page, box, opts);
@@ -385,21 +362,17 @@ class HumanBehaviorPlugin extends PuppeteerExtraPlugin {
 
     page.dblclick = async (selector: string, options?: any): Promise<void> => {
       const delay = this.generateHumanDelay(opts.delayMin, opts.delayMax);
-      console.log(`⏰ [页面双击] 操作前延迟: ${delay.toFixed(0)}ms`);
+
       await page.waitForTimeout(delay);
 
       const locator = page.locator(selector);
       const box = await locator.boundingBox();
 
       if (box) {
-        console.log(
-          `🎯 [页面双击] 目标区域: (${box.x.toFixed(1)}, ${box.y.toFixed(1)}) ${box.width.toFixed(1)}x${box.height.toFixed(1)}`,
-        );
         await this.performHumanDoubleClick(page, box, opts);
         return;
       }
 
-      console.log('⚠️ [页面双击] 未找到目标区域，使用原始双击方法');
       return originalDblclick(selector, options);
     };
 
@@ -427,16 +400,13 @@ class HumanBehaviorPlugin extends PuppeteerExtraPlugin {
       // 如果是右键点击选项，使用人类化右键点击
       if (options?.button === 'right') {
         const delay = this.generateHumanDelay(opts.delayMin, opts.delayMax);
-        console.log(`⏰ [页面右键点击] 操作前延迟: ${delay.toFixed(0)}ms`);
+
         await page.waitForTimeout(delay);
 
         const locator = page.locator(selector);
         const box = await locator.boundingBox();
 
         if (box) {
-          console.log(
-            `🎯 [页面右键点击] 目标区域: (${box.x.toFixed(1)}, ${box.y.toFixed(1)}) ${box.width.toFixed(1)}x${box.height.toFixed(1)}`,
-          );
           await this.performHumanRightClick(page, box, opts);
           return;
         }
@@ -457,21 +427,17 @@ class HumanBehaviorPlugin extends PuppeteerExtraPlugin {
 
     page.hover = async (selector: string, options?: any): Promise<void> => {
       const delay = this.generateHumanDelay(opts.delayMin, opts.delayMax);
-      console.log(`⏰ [页面悬停] 操作前延迟: ${delay.toFixed(0)}ms`);
+
       await page.waitForTimeout(delay);
 
       const locator = page.locator(selector);
       const box = await locator.boundingBox();
 
       if (box) {
-        console.log(
-          `🎯 [页面悬停] 目标区域: (${box.x.toFixed(1)}, ${box.y.toFixed(1)}) ${box.width.toFixed(1)}x${box.height.toFixed(1)}`,
-        );
         await this.performHumanHover(page, box, opts);
         return;
       }
 
-      console.log('⚠️ [页面悬停] 未找到目标区域，使用原始悬停方法');
       return originalHover(selector, options);
     };
 
@@ -501,7 +467,7 @@ class HumanBehaviorPlugin extends PuppeteerExtraPlugin {
       options?: any,
     ): Promise<void> => {
       const delay = this.generateHumanDelay(opts.delayMin, opts.delayMax);
-      console.log(`⏰ [页面拖拽] 操作前延迟: ${delay.toFixed(0)}ms`);
+
       await page.waitForTimeout(delay);
 
       const sourceLocator = page.locator(source);
@@ -511,14 +477,10 @@ class HumanBehaviorPlugin extends PuppeteerExtraPlugin {
       const targetBox = await targetLocator.boundingBox();
 
       if (sourceBox && targetBox) {
-        console.log(
-          `🎯 [页面拖拽] 从 (${sourceBox.x.toFixed(1)}, ${sourceBox.y.toFixed(1)}) 到 (${targetBox.x.toFixed(1)}, ${targetBox.y.toFixed(1)})`,
-        );
         await this.performHumanDrag(page, sourceBox, targetBox, opts);
         return;
       }
 
-      console.log('⚠️ [页面拖拽] 未找到拖拽元素，使用原始拖拽方法');
       return originalDragTo(source, target, options);
     };
   }
@@ -534,17 +496,13 @@ class HumanBehaviorPlugin extends PuppeteerExtraPlugin {
 
     page.tap = async (selector: string): Promise<void> => {
       const delay = this.generateHumanDelay(opts.delayMin, opts.delayMax);
-      console.log(`⏰ [页面触摸] 点击前延迟: ${delay.toFixed(0)}ms`);
+
       await page.waitForTimeout(delay);
 
       const locator = page.locator(selector);
       const box = await locator.boundingBox();
 
       if (box) {
-        console.log(
-          `📱 [页面触摸] 目标区域: (${box.x.toFixed(1)}, ${box.y.toFixed(1)}) ${box.width.toFixed(1)}x${box.height.toFixed(1)}`,
-        );
-
         // 模拟触摸点击（短暂延迟后直接点击）
         const targetPos = this.calculateInteractionPosition(box, opts.jitter);
         await page.waitForTimeout(100 + Math.random() * 200);
@@ -552,7 +510,6 @@ class HumanBehaviorPlugin extends PuppeteerExtraPlugin {
         return;
       }
 
-      console.log('⚠️ [页面触摸] 未找到目标区域，使用原始触摸方法');
       return originalTap(selector);
     };
 
@@ -584,7 +541,7 @@ class HumanBehaviorPlugin extends PuppeteerExtraPlugin {
       options?: any,
     ): Promise<void> => {
       const delay = this.generateHumanDelay(opts.delayMin, opts.delayMax);
-      console.log(`⏰ [页面输入] 输入前延迟: ${delay.toFixed(0)}ms`);
+
       await page.waitForTimeout(delay);
 
       // 先点击输入框
@@ -592,10 +549,6 @@ class HumanBehaviorPlugin extends PuppeteerExtraPlugin {
       const box = await locator.boundingBox();
 
       if (box) {
-        console.log(
-          `⌨️ [页面输入] 在目标区域输入文本: ${value.substring(0, 20)}${value.length > 20 ? '...' : ''}`,
-        );
-
         // 点击输入框
         await this.performHumanLeftClick(page, box, opts);
 
@@ -624,7 +577,6 @@ class HumanBehaviorPlugin extends PuppeteerExtraPlugin {
         return;
       }
 
-      console.log('⚠️ [页面输入] 未找到输入框，使用原始输入方法');
       return originalFill(selector, value, options);
     };
 
@@ -634,10 +586,6 @@ class HumanBehaviorPlugin extends PuppeteerExtraPlugin {
       'fill',
       opts,
       async (locator, box, originalMethod, value, options) => {
-        console.log(
-          `⌨️ [定位器输入] 在目标区域输入文本: ${value.substring(0, 20)}${value.length > 20 ? '...' : ''}`,
-        );
-
         // 点击输入框
         await this.performHumanLeftClick(page, box, opts);
 
@@ -680,17 +628,13 @@ class HumanBehaviorPlugin extends PuppeteerExtraPlugin {
       options?: any,
     ): Promise<string[]> => {
       const delay = this.generateHumanDelay(opts.delayMin, opts.delayMax);
-      console.log(`⏰ [页面选择] 操作前延迟: ${delay.toFixed(0)}ms`);
+
       await page.waitForTimeout(delay);
 
       const locator = page.locator(selector);
       const box = await locator.boundingBox();
 
       if (box) {
-        console.log(
-          `🔘 [页面选择] 选择选项: ${Array.isArray(values) ? values.join(', ') : values}`,
-        );
-
         // 点击选择框
         await this.performHumanLeftClick(page, box, opts);
 
@@ -701,7 +645,6 @@ class HumanBehaviorPlugin extends PuppeteerExtraPlugin {
         return originalSelectOption(selector, values, options);
       }
 
-      console.log('⚠️ [页面选择] 未找到选择框，使用原始选择方法');
       return originalSelectOption(selector, values, options);
     };
   }
@@ -718,37 +661,33 @@ class HumanBehaviorPlugin extends PuppeteerExtraPlugin {
 
     page.check = async (selector: string, options?: any): Promise<void> => {
       const delay = this.generateHumanDelay(opts.delayMin, opts.delayMax);
-      console.log(`⏰ [页面勾选] 操作前延迟: ${delay.toFixed(0)}ms`);
+
       await page.waitForTimeout(delay);
 
       const locator = page.locator(selector);
       const box = await locator.boundingBox();
 
       if (box) {
-        console.log(`✅ [页面勾选] 勾选复选框`);
         await this.performHumanLeftClick(page, box, opts);
         return;
       }
 
-      console.log('⚠️ [页面勾选] 未找到复选框，使用原始勾选方法');
       return originalCheck(selector, options);
     };
 
     page.uncheck = async (selector: string, options?: any): Promise<void> => {
       const delay = this.generateHumanDelay(opts.delayMin, opts.delayMax);
-      console.log(`⏰ [页面取消勾选] 操作前延迟: ${delay.toFixed(0)}ms`);
+
       await page.waitForTimeout(delay);
 
       const locator = page.locator(selector);
       const box = await locator.boundingBox();
 
       if (box) {
-        console.log(`❌ [页面取消勾选] 取消勾选复选框`);
         await this.performHumanLeftClick(page, box, opts);
         return;
       }
 
-      console.log('⚠️ [页面取消勾选] 未找到复选框，使用原始取消勾选方法');
       return originalUncheck(selector, options);
     };
   }
@@ -776,21 +715,14 @@ class HumanBehaviorPlugin extends PuppeteerExtraPlugin {
       if (originalMethod) {
         (locator as any)[methodName] = async (...methodArgs: any[]) => {
           const delay = this.generateHumanDelay(opts.delayMin, opts.delayMax);
-          console.log(
-            `⏰ [定位器${methodName}] 操作前延迟: ${delay.toFixed(0)}ms`,
-          );
           await page.waitForTimeout(delay);
 
           const box = await locator.boundingBox();
           if (box) {
-            console.log(
-              `🎯 [定位器${methodName}] 目标区域: (${box.x.toFixed(1)}, ${box.y.toFixed(1)}) ${box.width.toFixed(1)}x${box.height.toFixed(1)}`,
-            );
             await humanizedAction(locator, box, originalMethod, ...methodArgs);
             return;
           }
 
-          console.log(`⚠️ [定位器${methodName}] 未找到目标区域，使用原始方法`);
           return originalMethod(...methodArgs);
         };
       }
@@ -803,8 +735,6 @@ class HumanBehaviorPlugin extends PuppeteerExtraPlugin {
    * 浏览器连接时的处理
    */
   async onBrowser(browser: Browser): Promise<void> {
-    console.log('🔧 开始修补浏览器页面交互方法...');
-
     browser.contexts().forEach((context) => {
       context.pages().forEach((page) => {
         this.patchAllInteractionMethods(
@@ -827,7 +757,6 @@ class HumanBehaviorPlugin extends PuppeteerExtraPlugin {
    * 页面创建时的处理
    */
   async onPageCreated(page: Page): Promise<void> {
-    console.log('📄 新页面创建，应用人类行为模拟');
     this.patchAllInteractionMethods(
       page,
       this.opts as Required<HumanBehaviorOptions>,

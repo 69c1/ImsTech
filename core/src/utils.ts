@@ -1,28 +1,31 @@
 import { Page } from 'playwright';
 import ReadLine from 'readline';
-import Config from './config.js';
 
-/**
- * 因为 vue 动态加载, 上方使用了 ngProgess 库显示进度
- * 我们可以根据 ngProgress 判断页面是否加载完成
- * 轮询检查 ngProgress 的宽度是否达到 0%
- *
- * @example
- * ```typescript
- * await waitForSPALoaded(page);
- * ```
- * @param page 当前页面
- *
- */
-async function waitForSPALoaded(page: Page) {
-  await page.waitForLoadState();
-  await page.waitForTimeout(500);
-  await page.waitForFunction(() => {
-    const progressBar: HTMLElement | null =
-      document.querySelector('#ngProgress');
-    return progressBar && progressBar.style.width === '0%'; // 判断进度是否完成
-  });
-  await page.waitForTimeout(500);
+async function waitForStable(page: Page, ms = 1000) {
+  await page.waitForFunction((duration) => {
+    return new Promise((resolve) => {
+      let timer: number;
+
+      const observer = new MutationObserver(() => {
+        clearTimeout(timer);
+        timer = window.setTimeout(() => {
+          observer.disconnect();
+          resolve(true);
+        }, duration);
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+      });
+
+      timer = window.setTimeout(() => {
+        observer.disconnect();
+        resolve(true);
+      }, duration);
+    });
+  }, ms);
 }
 
 function input(query: string) {
@@ -102,4 +105,4 @@ function errorWithRetry(taskName: string, maxCnt: number) {
   return new ErrorWithRetry(taskName, maxCnt);
 }
 
-export { input, waitForSPALoaded, parseDOMText, errorWithRetry };
+export { input, waitForStable, parseDOMText, errorWithRetry };

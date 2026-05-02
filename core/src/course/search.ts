@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { Locator, Page } from 'playwright';
 import * as Activity from '../activity.js';
-import { waitForSPALoaded } from '../utils.js';
+import { waitForStable } from '../utils.js';
 import { CourseType, hasCourseType } from './processor.js';
 import Config from '../config.js';
 
@@ -92,10 +92,10 @@ async function getUncompletedCourses(
   await page.goto(`${Config.urls.course()}/${activityInfo.id}/ng#/`);
   await page.waitForURL(RegExp(`^${Config.urls.course()}.*`));
 
-  await waitForSPALoaded(page);
+  await waitForStable(page);
   await page.locator('input[type="checkbox"]').setChecked(true);
 
-  await waitForSPALoaded(page);
+  await waitForStable(page);
   const expandBtn = page.getByText(/全部(?:收起|展开)/);
 
   if ((await expandBtn.textContent())!.indexOf('收起')) {
@@ -103,7 +103,7 @@ async function getUncompletedCourses(
     await page.waitForLoadState('domcontentloaded');
   }
 
-  await waitForSPALoaded(page);
+  await waitForStable(page);
   const modules = await page.locator('div.module').all();
   const modulesData = await getModulesData(modules);
 
