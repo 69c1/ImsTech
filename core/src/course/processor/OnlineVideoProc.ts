@@ -1,6 +1,5 @@
-import { expect } from '@playwright/test';
 import { Page } from 'playwright';
-import ProgressBar from 'progress';
+import cliProgress from 'cli-progress';
 import { CourseType, Processor } from '../processor.js';
 import { waitForStable } from '../../utils.js';
 import Config from '../../config.js';
@@ -105,10 +104,10 @@ export default class OnlineVideoProc implements Processor {
     if (mediaType === 'video') {
       await this.showVideoControls(page);
       await this.trySetVideoQuality(page);
-      await this.clickSafely(page, '.mvp-toggle-play.mvp-first-btn-margin');
+      await this.click(page, '.mvp-toggle-play.mvp-first-btn-margin');
     } else {
-      await this.clickSafely(page, '.play');
-      await this.clickSafely(page, '.volume');
+      await this.click(page, '.play');
+      await this.click(page, '.volume');
     }
   }
 
@@ -122,10 +121,9 @@ export default class OnlineVideoProc implements Processor {
     }
   }
 
-  private async clickSafely(page: Page, selector: string) {
+  private async click(page: Page, selector: string) {
     const el = page.locator(selector);
     try {
-      await expect(el).toBeVisible({ timeout: 1000 });
       await el.click();
     } catch {
       console.warn(`⚠️ 元素 ${selector} 不可点击`);
@@ -187,7 +185,7 @@ export default class OnlineVideoProc implements Processor {
 
   private async restartPlayback(page: Page) {
     try {
-      await this.clickSafely(page, '.mvp-toggle-play.mvp-first-btn-margin');
+      await this.click(page, '.mvp-toggle-play.mvp-first-btn-margin');
       await page.waitForTimeout(500);
     } catch (e) {
       console.warn('⚠️ 重启播放失败，尝试刷新');
@@ -202,27 +200,29 @@ export default class OnlineVideoProc implements Processor {
 
   private trackProgress(
     page: Page,
-    progress: ProgressBar,
+    progress: cliProgress.SingleBar,
     mediaType: 'video' | 'audio',
     end: string,
   ) {
-    let prev = '';
+    let prev = 0;
+
     const interval = setInterval(async () => {
-      const [cur] = await this.getMediaTime(page, mediaType);
+      const [curStr] = await this.getMediaTime(page, mediaType);
+      const cur = this.timeStringToNumber(curStr);
+
       if (cur !== prev) {
-        progress.tick(
-          this.timeStringToNumber(cur) -
-            this.timeStringToNumber(prev || '00:00'),
-          {
-            tcur: cur,
-            tend: end,
-          },
-        );
+        progress.update(cur, {
+          tcur: curStr,
+          tend: end,
+        });
         prev = cur;
       }
     }, 1000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      progress.stop(); // 👈 记得结束
+    };
   }
 
   private async waitForPlaybackEnd(page: Page, mediaType: 'video' | 'audio') {
@@ -253,19 +253,20 @@ export default class OnlineVideoProc implements Processor {
   // -------------------------------
   // ⏱️ 时间处理 + 进度条
   // -------------------------------
-
   private createProgress(cur: number, end: number) {
-    const bar = new ProgressBar('🎬 正在播放 [:bar] :percent :tcur/:tend', {
-      head: '>',
-      incomplete: ' ',
-      total: end,
-      width: 30,
-      clear: true,
-    });
-    bar.tick(cur, {
+    const bar = new cliProgress.SingleBar(
+      {
+        format: '🎬 正在播放 [{bar}] {percentage}% | {tcur}/{tend}',
+        hideCursor: true,
+      },
+      cliProgress.Presets.shades_classic,
+    );
+
+    bar.start(end, cur, {
       tcur: this.timeNumberToString(cur),
       tend: this.timeNumberToString(end),
     });
+
     return bar;
   }
 

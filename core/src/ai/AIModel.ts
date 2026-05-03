@@ -3,8 +3,8 @@ import 'dotenv/config';
 import { exit } from 'process';
 import chalk from 'chalk';
 import https from 'https';
+import prompts from 'prompts';
 
-import { input } from '../utils.js';
 import { SubjectType } from '../api/Exam.js';
 import Config from '../config.js';
 import { sleep } from 'openai/core.js';
@@ -24,7 +24,14 @@ class AIModel {
     if (!agree) {
       console.log('你真的确定需要"AI"答题吗? ');
 
-      if ((await input('这可能有风险需要自己承担( "y" 确定): ')) != 'y') {
+      const { ok } = await prompts({
+        type: 'confirm',
+        name: 'ok',
+        message: '这可能有风险，需要自己承担',
+        initial: false, // 默认否
+      });
+
+      if (!ok) {
         console.log('程序退出');
         exit();
       }

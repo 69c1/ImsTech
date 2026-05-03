@@ -2,14 +2,14 @@ import 'source-map-support/register.js';
 import chalk from 'chalk';
 import { Browser, Locator, Page } from 'playwright-core';
 import { format } from 'util';
-import { exit } from 'process';
+import prompts from 'prompts';
 
 import Config, { API_BASE_URL } from './config.js';
 import * as Activity from './activity.js';
 import * as Processor from './course/processor.js';
 import * as Search from './course/search.js';
 import { filterCookies, login, LoginConfig, storeCookies } from './login.js';
-import { errorWithRetry, input, waitForStable } from './utils.js';
+import { errorWithRetry, waitForStable } from './utils.js';
 import { CourseInfo } from './course/search.js';
 import { ActivityInfo } from './activity.js';
 
@@ -83,26 +83,33 @@ class IMSRunner {
 
   // 用户选择课程组
   private async selectCourseGroup(listItems: ActivityInfo[]) {
-    console.log(chalk.bold('\n可选课程组:'));
-    console.log(chalk.gray(`0. 全部课程`));
+    const choices = [
+      { title: '全部课程', value: 0 },
+      ...listItems.map((item, i) => ({
+        title: `${item.title}  ${item.percent ?? ''}`,
+        value: i + 1,
+      })),
+    ];
 
-    listItems.forEach((item, i) =>
-      console.log(`${i + 1}. ${item.title}  ${item.percent ?? ''}`),
+    // prompts 选择
+    const promptPromise = prompts({
+      type: 'select',
+      name: 'value',
+      message: '请选择课程组 (20秒后自动选择全部)',
+      choices,
+    });
+
+    // 超时 fallback
+    const timeoutPromise = new Promise<{ value: number }>((resolve) =>
+      setTimeout(() => {
+        prompts.override({}); // hack 触发结束
+        return resolve({ value: 0 });
+      }, 20000),
     );
 
-    const timeoutPromise = new Promise((resolve) =>
-      setTimeout(() => resolve(0), 20000),
-    );
-    const userInput = await Promise.race([
-      input('请输入序号选择课程组(20秒后自动选择全部): '),
-      timeoutPromise,
-    ]);
+    const result = await Promise.race([promptPromise, timeoutPromise]);
 
-    const num = Number(userInput);
-    if (isNaN(num)) {
-      console.error(chalk.red('❌ 请输入数字'));
-      exit(1);
-    }
+    const num = result?.value ?? 0;
 
     return num === 0 ? listItems : [listItems[num - 1]];
   }

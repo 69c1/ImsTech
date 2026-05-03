@@ -28,20 +28,6 @@ async function waitForStable(page: Page, ms = 1000) {
   }, ms);
 }
 
-function input(query: string) {
-  const rl = ReadLine.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-
-  return new Promise<string>((resolve) => {
-    rl.question(query, (answer) => {
-      rl.close();
-      resolve(answer);
-    });
-  });
-}
-
 function parseDOMText(page: Page, str: string) {
   return page.evaluate((str) => {
     const div = document.createElement('div');
@@ -105,4 +91,4 @@ function errorWithRetry(taskName: string, maxCnt: number) {
   return new ErrorWithRetry(taskName, maxCnt);
 }
 
-export { input, waitForStable, parseDOMText, errorWithRetry };
+export { waitForStable, parseDOMText, errorWithRetry };

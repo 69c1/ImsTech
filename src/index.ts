@@ -2,12 +2,8 @@ import { fileURLToPath } from 'url';
 import path, { dirname } from 'path';
 
 import { app, BrowserWindow } from 'electron';
-import { chromium } from 'playwright-extra';
-import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+import { spawn } from 'child_process';
 
-import { ims } from '@ims-tech-auto/core';
-import AIModel from '@ims-tech-auto/core/ai/AIModel.js';
-import HumanBehaviorPlugin from '@ims-tech-auto/core/plugins/HumanBehaviorPlugin.js';
 import Config from '@ims-tech-auto/core/config.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -51,38 +47,19 @@ async function createWindow() {
   mainWindow.webContents.setAudioMuted(true);
 
   // 使用 Playwright 连接窗口，示例连接到CDP端口（确保 Electron 打开时调试端口暴露）
-  await connectToElectron().catch((err) => {
+  connectToElectron().catch((err) => {
     console.error('Electron连接Playwright失败:', err);
   });
 }
 
 async function connectToElectron() {
-  // 连接到 Electron 的 CDP 端口
-  const browser = await chromium
-    .use(StealthPlugin())
-    .use(HumanBehaviorPlugin())
-    .connectOverCDP('http://localhost:9222', {
-      slowMo: 240,
-      timeout: 1000 * 60 * 2,
-      headers: {
-        Accept: 'application/json',
-        Connection: 'keep-alive',
-      },
-    });
+  const child = spawn('node', [path.join(__dirname, 'dist', 'src', 'cli-runner.js')], {
+    stdio: 'inherit',
+  });
 
-  await AIModel.init(true);
-
-  const runner = await ims
-    .login(browser, {
-      ...Config.user,
-      loginApi: Config.urls.login(),
-      homeApi: Config.urls.home(),
-    })
-    .start();
-
-  await runner?.restart();
-
-  app.exit();
+  child.on('exit', () => {
+    app.exit();
+  });
 }
 
 app.whenReady().then(createWindow);
