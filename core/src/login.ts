@@ -55,7 +55,7 @@ async function login(browser: Browser, config: LoginConfig) {
   }
 
   // 等待跳转到主页
-  await page.waitForURL(config.homeApi, { timeout: 1000 * 60 * 5 });
+  await page.waitForURL(RegExp(`^${config.homeApi}.*`), { timeout: 1000 * 60 * 5, });
 
   return page;
 }
