@@ -20,6 +20,7 @@ export default class OnlineVideoProc implements Processor {
       return element.scrollHeight;
     });
 
+    // 等待视频/音频元素加载（可能需要时间加载）
     const mediaType = await this.detectMediaType(page);
     if (!mediaType) {
       console.warn('❌ 未检测到音视频元素，跳过');
@@ -59,6 +60,7 @@ export default class OnlineVideoProc implements Processor {
   // -------------------------------
 
   private async detectMediaType(page: Page): Promise<'video' | 'audio' | ''> {
+    // 先尝试立即检测
     if (await page.locator('video').count()) {
       await this.showVideoControls(page);
       return 'video';
@@ -66,6 +68,28 @@ export default class OnlineVideoProc implements Processor {
     if (await page.locator('audio').count()) {
       return 'audio';
     }
+
+    // 如果未检测到，等待最多5秒钟让页面加载
+    console.log('⏳ 等待媒体元素加载...');
+    try {
+      await page.waitForSelector('video', { timeout: 5000 }).catch(() => {});
+      if (await page.locator('video').count()) {
+        await this.showVideoControls(page);
+        return 'video';
+      }
+    } catch {
+      // 继续检查音频
+    }
+
+    try {
+      await page.waitForSelector('audio', { timeout: 5000 }).catch(() => {});
+      if (await page.locator('audio').count()) {
+        return 'audio';
+      }
+    } catch {
+      // 都未找到
+    }
+
     return '';
   }
 
@@ -124,9 +148,19 @@ export default class OnlineVideoProc implements Processor {
   private async click(page: Page, selector: string) {
     const el = page.locator(selector);
     try {
+      await el.scrollIntoViewIfNeeded({ timeout: 1000 });
+      await el.waitFor({ state: 'visible', timeout: 1000 });
       await el.click();
     } catch {
-      console.warn(`⚠️ 元素 ${selector} 不可点击`);
+      console.warn(`⚠️ 元素 ${selector} 不可点击，尝试使用 JavaScript 点击`);
+      // 如果正常点击失败，尝试用 JavaScript 直接点击
+      try {
+        await el.evaluate((node) => {
+          (node as HTMLElement).click();
+        });
+      } catch {
+        console.warn(`⚠️ 元素 ${selector} 点击失败`);
+      }
     }
   }
 

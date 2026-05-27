@@ -9,7 +9,7 @@ import { Processor } from '../processor.js';
 import AIModel, { Num, num2Letter } from '../../ai/AIModel.js';
 import course from '../../api/course.js';
 import Exam, { OptionId, SubjectId } from '../../api/Exam.js';
-import { parseDOMText } from '../../utils.js';
+import { parseDOMText, input } from '../../utils.js';
 import BaseSubjectResolver from '../exam/BaseSubjectResolver.js';
 import { createResolver, hasResolver, s2s } from '../exam/resolver.js';
 import { CourseInfo, CourseType } from '../search.js';
@@ -24,6 +24,7 @@ export default class ExamProc implements Processor {
   #courseInfo?: CourseInfo;
   #totalPoints: number = Config.totalPoints;
   #totalScore: number = -1;
+  #remainingTimes: number = -1; // 记录剩余次数
 
   // config
   private tryCount = 15;
@@ -41,6 +42,53 @@ export default class ExamProc implements Processor {
     if (!(await this.isSupport(exam))) {
       console.log('考试问题某些类型目前不支持: skip');
       return false;
+    }
+
+    // 检查剩余可尝试次数
+    try {
+      const examInfo = await exam.get();
+      const submitTimes = examInfo['allow_submit_times'];
+      const submittedTimes = examInfo['submitted_times'];
+      const remainingTimes = submitTimes - submittedTimes;
+      
+      this.#remainingTimes = remainingTimes; // 保存剩余次数
+
+      console.log(`允许提交次数: ${submitTimes}, 已提交: ${submittedTimes}, 剩余: ${remainingTimes}`);
+
+      // 剩余 < 3 次：超时跳过（返回 false）
+      if (remainingTimes < 3) {
+        console.log('⚠️ 剩余可尝试次数 < 3，跳过形考');
+        return false;
+      }
+
+      // 剩余 < 5 次：需要用户确认，超时20s默认同意
+      if (remainingTimes < 5) {
+        console.log('⚠️ 剩余可尝试次数 < 5，需要确认是否使用 AI 答题');
+        const timeoutPromise = new Promise<boolean>((resolve) =>
+          setTimeout(() => {
+            console.log('📝 超时20s，默认同意使用 AI 答题');
+            resolve(true);
+          }, 20000),
+        );
+        const userConfirm = await Promise.race([
+          input('是否使用 AI 答题? (y/n): ').then((ans: string) => ans.toLowerCase() === 'y'),
+          timeoutPromise,
+        ]);
+
+        if (!userConfirm) {
+          console.log('👤 用户选择不使用 AI，跳过');
+          return false;
+        }
+      }
+
+      // 剩余 <= 10 次：只尝试一次
+      if (remainingTimes <= 10) {
+        console.log('ℹ️ 剩余可尝试次数 <= 10，将只尝试一次');
+        this.tryCount = 1;
+      }
+    } catch (e) {
+      console.warn('获取考试信息失败:', e);
+      // 如果获取失败，继续执行
     }
 
     return true;

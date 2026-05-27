@@ -28,6 +28,50 @@ async function waitForStable(page: Page, ms = 1000) {
   }, ms);
 }
 
+function input(query: string) {
+  // 检查 stdin 是否可用（Node.js CLI 模式）
+  const isStdinAvailable = process.stdin && process.stdin.isTTY;
+
+  const rl = ReadLine.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  return new Promise<string>((resolve) => {
+    let answered = false;
+
+    // 设置超时处理（防止 Electron 中 stdin 被冻结）
+    const timeout = setTimeout(() => {
+      if (!answered) {
+        answered = true;
+        rl.close();
+        resolve('0');
+      }
+    }, 25000);
+
+    rl.question(query, (answer) => {
+      if (!answered) {
+        answered = true;
+        clearTimeout(timeout);
+        rl.close();
+        resolve(answer || '0');
+      }
+    });
+
+    // 如果 stdin 不可用（Electron），立即超时
+    if (!isStdinAvailable) {
+      setTimeout(() => {
+        if (!answered) {
+          answered = true;
+          clearTimeout(timeout);
+          rl.close();
+          resolve('0');
+        }
+      }, 100);
+    }
+  });
+}
+
 function parseDOMText(page: Page, str: string) {
   return page.evaluate((str) => {
     const div = document.createElement('div');
@@ -91,4 +135,4 @@ function errorWithRetry(taskName: string, maxCnt: number) {
   return new ErrorWithRetry(taskName, maxCnt);
 }
 
-export { waitForStable, parseDOMText, errorWithRetry };
+export { waitForStable, input, parseDOMText, errorWithRetry };

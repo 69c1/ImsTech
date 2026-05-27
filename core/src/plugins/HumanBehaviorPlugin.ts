@@ -1,5 +1,5 @@
 import { PuppeteerExtraPlugin } from 'puppeteer-extra-plugin';
-import type { Browser, Page, Locator } from 'playwright-core';
+import type { Browser, Page, Locator } from 'playwright';
 
 export interface HumanBehaviorOptions {
   /** 最小延迟时间(毫秒) */

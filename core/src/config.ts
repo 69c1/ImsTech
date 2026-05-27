@@ -28,6 +28,7 @@ const Config = {
 
   browser: {
     headless: !!process.env._HEAD_LESS,
+    executablePath: process.env._CHROME_DEV,
     slowMo() {
       const min = Number(process.env._SLOW_MO_MIN ?? 6000);
       const max = Number(process.env._SLOW_MO_MAX ?? 9000);

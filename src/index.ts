@@ -32,8 +32,8 @@ app.on('second-instance', () => {
 
 async function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 900,
+    width: 1600,
+    height: 1000,
     show: !Config.browser.headless,
     webPreferences: {
       nodeIntegration: false, // 禁用 Node.js Integration

@@ -1,6 +1,6 @@
 import 'source-map-support/register.js';
 import chalk from 'chalk';
-import { Browser, Locator, Page } from 'playwright-core';
+import type { Browser, Locator, Page } from 'playwright';
 import { format } from 'util';
 import prompts from 'prompts';
 
